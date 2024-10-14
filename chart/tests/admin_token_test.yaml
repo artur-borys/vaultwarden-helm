@@ -1,0 +1,22 @@
+suite: Admin token test
+release:
+  name: release
+templates:
+  - admin-token-secret.yaml
+tests:
+  - it: should generate random string with length of 32
+    set:
+      auth.admin.enabled: true
+    asserts:
+      - matchRegex:
+          path: data.token
+          decodeBase64: true
+          pattern: .{32}
+
+  - it: should not be present if existingSecret provided
+    set:
+      auth.admin.enabled: true
+      auth.admin.existingSecret: secret
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -1,0 +1,29 @@
+suite: PVC test
+release:
+  name: release
+tests:
+  - it: has data PVC
+    template: pvc_data.yaml
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - equal:
+          path: metadata.name
+          value: release-vaultwarden-data
+
+  - it: has SQLite PVC by default
+    template: pvc_sqlite.yaml
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - equal:
+          path: metadata.name
+          value: release-vaultwarden-sqlite
+
+  - it: can have no SQLite PVC
+    template: pvc_sqlite.yaml
+    set:
+      pvc.sqlite.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

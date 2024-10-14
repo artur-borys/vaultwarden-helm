@@ -1,0 +1,20 @@
+# Values when testing with Trivy, just to showcase that it's possible to get rid of issues by proper configuration
+# An example is resources requests and limits, which should be left up to user to decide
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 500m
+  limits:
+    memory: 1Gi
+    cpu: 1
+
+initContainers:
+  waitForDb:
+    resources:
+      requests:
+        memory: 32Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+        cpu: 200m

@@ -1,0 +1,34 @@
+{{- if and .Values.tls.certManager.enabled (not .Values.tls.existingSecret) }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "vaultwarden.fullname" . }}-tls
+  labels:
+    {{- include "vaultwarden.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.tls.certManager.subject }}
+  subject:
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+  commonName: {{ .Values.tls.certManager.commonName }}
+  secretName: {{ include "vaultwarden.tlsSecretName" . }}
+  dnsNames:
+    - {{ include "vaultwarden.fullname" . }}
+    - {{ include "vaultwarden.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "vaultwarden.fullname" . }}.{{ .Release.Namespace }}.svc.cluster
+    - {{ include "vaultwarden.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+    {{- with .Values.tls.certManager.additionalDnsNames }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  duration: {{ .Values.tls.certManager.duration }}
+  renewBefore: {{ .Values.tls.certManager.renewBefore }}
+  {{- with .Values.tls.certManager.issuerRef }}
+  issuerRef:
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.tls.certManager.privateKey }}
+  privateKey:
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }} 

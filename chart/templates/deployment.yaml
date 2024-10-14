@@ -1,0 +1,172 @@
+{{- if and .Values.mariadb.enabled .Values.pvc.sqlite.enabled -}}
+{{ fail "You've enabled mariadb but didn't disable sqlite PVC - refusing to continue as it would lead to unused resource usage" }}
+{{- end -}}
+{{- if and (not .Values.mariadb.enabled) (gt (int .Values.replicaCount) 1) -}}
+{{ fail "You've set replicaCount higher than 1, but didn't enable any of the database backends - refusing to continue and is would lead to issues" }}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vaultwarden.fullname" . }}
+  labels:
+    {{- include "vaultwarden.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vaultwarden.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "vaultwarden.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vaultwarden.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "vaultwarden.fullname" . }}-data
+        {{- if .Values.pvc.sqlite.enabled }}
+        - name: sqlite
+          persistentVolumeClaim:
+            claimName: {{ include "vaultwarden.fullname" . }}-sqlite
+        {{- end }}
+        {{- if .Values.mariadb.enabled }}
+        - name: mariadb-client
+          secret:
+            secretName: {{ include "vaultwarden.fullname" . }}-mariadb-client
+        {{- end }}
+        {{- if or .Values.tls.existingSecret .Values.tls.certManager.enabled }}
+        - name: tls
+          secret:
+            secretName: {{ include "vaultwarden.tlsSecretName" . }}
+        {{- end }}
+      {{- if and .Values.mariadb.enabled .Values.initContainers.waitForDb.enabled }}
+      initContainers:
+        - name: wait-for-db
+          securityContext:
+            {{- toYaml .Values.initContainers.waitForDb.securityContext | nindent 12 }}
+          image: "{{ .Values.initContainers.waitForDb.image }}"
+          imagePullPolicy: {{ .Values.initContainers.waitForDb.imagePullPolicy }}
+          {{- with .Values.initContainers.waitForDb.resources }}
+          resources:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          command: ['/bin/bash']
+          volumeMounts:
+            - name: mariadb-client
+              mountPath: /client
+              readOnly: true
+          args:
+            - -c
+            - |-
+              while true; do
+                if mariadb --defaults-extra-file=/client/my.cnf -e "SELECT 1;"; then
+                  echo "DB ready"
+                  break
+                fi
+                echo "DB not ready"
+                sleep 5
+              done
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DOMAIN
+              value: {{ .Values.domain }}
+            - name: ROCKET_PORT
+              value: {{ .Values.service.port | quote }}
+            {{- if .Values.auth.admin.enabled }}
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vaultwarden.adminTokenSecretName" . }}
+                  key: token
+            {{- end }}
+            {{- if .Values.pvc.sqlite.enabled }}
+            - name: DATABASE_URL
+              value: /sqlite/db.sqlite3
+            {{- end }}
+            {{- if .Values.mariadb.enabled }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vaultwarden.fullname" . }}-db-url
+                  key: db_url
+            {{- end }}
+            {{- if .Values.smtp.enabled }}
+            - name: SMTP_HOST
+              value: {{ .Values.smtp.host }}
+            - name: SMTP_FROM
+              value: {{ .Values.smtp.from }}
+            - name: SMTP_FROM_NAME
+              value: {{ .Values.smtp.fromName }}
+            - name: SMTP_AUTH_MECHANISM
+              value: {{ .Values.smtp.authMechanism }}
+            - name: SMTP_SECURITY
+              value: {{ .Values.smtp.security }}
+            - name: SMTP_PORT
+              value: {{ .Values.smtp.port | quote }}
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vaultwarden.smtpSecretName" . }}
+                  key: username
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vaultwarden.smtpSecretName" . }}
+                  key: password
+            {{- end }}
+            {{- if or .Values.tls.existingSecret .Values.tls.certManager.enabled }}
+            - name: ROCKET_TLS
+              value: '{certs="/tls/tls.crt",key="/tls/tls.key"}'
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- include "vaultwarden.livenessProbe" . | nindent 12 }}
+          readinessProbe:
+            {{- include "vaultwarden.readinessProbe" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if .Values.pvc.sqlite.enabled }} 
+            - name: sqlite 
+              mountPath: /sqlite
+            {{- end }}
+            {{- if or .Values.tls.existingSecret .Values.tls.certManager.enabled }}
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
