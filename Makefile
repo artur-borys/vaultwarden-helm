@@ -1,20 +1,20 @@
 all: test lint trivy build-helm
 
 build-helm: update-dependencies
-	helm package chart -d build
+	helm package charts/vaultwarden -d build
 
 test: update-dependencies
-	helm unittest chart
+	helm unittest charts/vaultwarden
 
 lint: update-dependencies
-	helm lint chart
+	helm lint charts/vaultwarden
 
 trivy: update-dependencies
-	trivy config --helm-values trivy.values.yaml chart
+	trivy config --helm-values trivy.values.yaml charts/vaultwarden
 
 clean:
 	rm -rf build
-	rm -rf chart/charts
+	rm -rf charts/vaultwarden/charts
 
 update-dependencies:
-	helm dependency update chart
+	helm dependency update charts/vaultwarden
