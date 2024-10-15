@@ -1,0 +1,28 @@
+apiVersion: v1
+entries:
+  vaultwarden:
+  - apiVersion: v2
+    appVersion: 1.32.2
+    created: "2024-10-15T18:26:26.07687897Z"
+    dependencies:
+    - condition: mariadb.enabled
+      name: mariadb
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 19.1.0
+    description: A Helm chart for deploying Vaultwarden on Kubernetes
+    digest: 3896cdf1151c783293708ef846bc756fc4f53a0361955afba094efec13d9d4ca
+    keywords:
+    - vaultwarden
+    - password-manager
+    maintainers:
+    - email: artur.borys13@gmail.com
+      name: Artur Boryś
+    name: vaultwarden
+    sources:
+    - https://github.com/artur-borys/vaultwarden-helm
+    - https://github.com/dani-garcia/vaultwarden
+    type: application
+    urls:
+    - https://github.com/artur-borys/vaultwarden-helm/releases/download/vaultwarden-1.0.0-alpha/vaultwarden-1.0.0-alpha.tgz
+    version: 1.0.0-alpha
+generated: "2024-10-15T18:26:26.076887316Z"
