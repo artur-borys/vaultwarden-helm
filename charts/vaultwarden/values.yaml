@@ -12,7 +12,7 @@ replicaCount: 1
 
 image:
   repository: vaultwarden/server@sha256
-  tag: 7de8fd442afc26e4932a0b2521e2eec82db9f17667eef7b46fd9c2fa2e639de2 # 1.32.3
+  tag: 7271b8ceb729f9b46144c800125813dcc8d16bb6874217c48e59b22b45e47d7d # 1.32.4
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -54,7 +54,7 @@ securityContext:
 initContainers:
   waitForDb:
     enabled: true
-    image: bitnami/mariadb@sha256:0b22e57cbb55e002eda38cb781331aee7bfe91931c6c62eec37c970019feb55d # 11.5.2
+    image: bitnami/mariadb@sha256:1e1fd20b91fa36c93423a861b7d644175f925203594dcce1de4888b73704e8ff # bitnami/mariadb:11.5.2-debian-12-r6
     imagePullPolicy: IfNotPresent
     resources: {}
     securityContext:
