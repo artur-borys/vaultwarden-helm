@@ -1,1 +1,1 @@
-* upgrade vaultwarden image reference to 1.32.6
+* upgrade vaultwarden image reference to 1.32.7
