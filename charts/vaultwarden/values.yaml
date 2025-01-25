@@ -12,7 +12,7 @@ replicaCount: 1
 
 image:
   repository: vaultwarden/server@sha256
-  tag: 7a0aa23c0947be3582898deb5170ea4359493ed9a76af2badf60a7eb45ac36af # 1.32.7
+  tag: e81ca01351ecf40083366202b163e7a31abca04d96e2194e9e1f78a57052f65c # 1.33.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
